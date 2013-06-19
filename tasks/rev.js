@@ -28,6 +28,22 @@ module.exports = function(grunt) {
     return {name: name, ext: ext};
   }
 
+  function copyFileSync(src, dest) {
+    var BUF_LENGTH = 8 * 1024, 
+        buff = new Buffer(BUF_LENGTH),
+        input = fs.openSync(src, "r"),
+        output = fs.openSync(dest, "w");
+
+    var bytesRead, pos;
+
+    while (bytesRead = fs.readSync(input, buff, 0, BUF_LENGTH, pos)) {
+      fs.writeSync(output, buff, 0, bytesRead);
+      pos += bytesRead;
+    }
+    fs.closeSync(input);
+    return fs.closeSync(output);
+  }
+
   grunt.registerMultiTask('rev', 'Prefix static asset file names with a content hash', function() {
 
     var options = this.options({
@@ -52,7 +68,7 @@ module.exports = function(grunt) {
         if (options.rename) {
           fs.renameSync(f, outPath);
         } else {
-          fs.createReadStream(f).pipe(fs.createWriteStream(outPath));
+          copyFileSync(f, outPath);
         }
         grunt.log.write(f + ' ').ok(renamed);
 

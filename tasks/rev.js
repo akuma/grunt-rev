@@ -50,7 +50,7 @@ module.exports = function(grunt) {
       encoding: 'utf8',
       algorithm: 'md5',
       length: 8,
-      rename: false
+      rename: true
     });
 
     this.files.forEach(function(filePair) {

@@ -46,7 +46,7 @@ exports.rev = {
   international_options: function(test) {
     test.expect(1);
 
-    var exists = grunt.file.exists('tmp/international.faa07745.txt');
+    var exists = grunt.file.exists('tmp/international.7dfc7ba3.txt');
     test.ok(exists, '8 character MD5 hash suffix for international content');
 
     test.done();

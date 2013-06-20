@@ -46,13 +46,15 @@ module.exports = function(grunt) {
       custom_options: {
         options: {
           algorithm: 'sha1',
-          length: 4
+          length: 4,
+          version: 'tmp/version.json'
         },
         src: ['tmp/custom.txt']
       },
       international_options: {
         options: {
-          encoding: 'utf8'
+          encoding: 'utf8',
+          rename: false
         },
         src: ['tmp/international.txt']
       },

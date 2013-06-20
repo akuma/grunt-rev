@@ -8,31 +8,26 @@
 
 'use strict';
 
-var fs = require('fs'),
-  path = require('path'),
-  crypto = require('crypto');
+var fs = require('fs');
+var path = require('path');
+var crypto = require('crypto');
+
+var BUF_LENGTH = 8 * 1024;
 
 module.exports = function(grunt) {
 
-  function md5(filepath, algorithm, encoding, fileEncoding) {
-    var hash = crypto.createHash(algorithm);
+  function getHash(filepath, encoding, options) {
+    var hash = crypto.createHash(options.algorithm);
     grunt.log.verbose.write('Hashing ' + filepath + '...');
-    hash.update(grunt.file.read(filepath), fileEncoding);
-    return hash.digest(encoding);
-  }
-
-  function getNameAndExtension(filename) {
-    var i = filename.lastIndexOf('.'),
-        name = (i < 0) ? filename : filename.substr(0, i),
-        ext = (i < 0) ? '' : filename.substr(i + 1);
-    return {name: name, ext: ext};
+    hash.update(grunt.file.read(filepath), options.encoding);
+    hash = hash.digest(encoding);
+    return hash.slice(0, options.length);
   }
 
   function copyFileSync(src, dest) {
-    var BUF_LENGTH = 8 * 1024, 
-        buff = new Buffer(BUF_LENGTH),
-        input = fs.openSync(src, "r"),
-        output = fs.openSync(dest, "w");
+    var buff = new Buffer(BUF_LENGTH);
+    var input = fs.openSync(src, "r");
+    var output = fs.openSync(dest, "w");
 
     var bytesRead, pos;
 
@@ -44,37 +39,50 @@ module.exports = function(grunt) {
     return fs.closeSync(output);
   }
 
-  grunt.registerMultiTask('rev', 'Prefix static asset file names with a content hash', function() {
+  grunt.registerMultiTask('rev', 'Add a content hash to static asset file names', function() {
 
     var options = this.options({
       encoding: 'utf8',
       algorithm: 'md5',
       length: 8,
-      rename: true
+      rename: true,
+      version: undefined
     });
+
+    var versions = {};
 
     this.files.forEach(function(filePair) {
       filePair.src.forEach(function(f) {
 
-        var hash = md5(f, options.algorithm, 'hex', options.encoding),
-            prefix = hash.slice(0, options.length),
-            filename = path.basename(f),
-            nameAndExt = getNameAndExtension(filename),
-            renamed = [nameAndExt.name, prefix, nameAndExt.ext].join('.'),
-            outPath = path.resolve(path.dirname(f), renamed);
+        var rev = getHash(f, 'hex', options);
+        var ext = path.extname(f);
+        var basename = path.basename(f, ext);
+        var renamed = basename + '.' + rev + ext;
+        var outPath = path.join(path.dirname(f), renamed);
 
-        grunt.verbose.ok().ok(hash);
+        //grunt.verbose.ok().ok(rev);
 
         if (options.rename) {
           fs.renameSync(f, outPath);
         } else {
           copyFileSync(f, outPath);
         }
-        grunt.log.write(f + ' ').ok(renamed);
 
+        if (options.version) {
+          // Get the origin file path, e.g. js/global.min.js
+          var origin = f.split(path.sep).slice(1).join(path.sep);
+          // Mapping origin file path to hashed file path
+          versions[origin] = renamed;
+        }
+
+        grunt.log.write(f + ' ').ok(renamed);
       });
     });
 
+    if (options.version) {
+      grunt.file.write(options.version, JSON.stringify(versions, null, ' '));
+      grunt.log.write('Version file ' + options.version + ' created.').ok();
+    }
   });
 
 };

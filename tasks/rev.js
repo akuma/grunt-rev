@@ -72,10 +72,10 @@ module.exports = function(grunt) {
           // Get the origin file path, e.g. js/global.min.js
           var origin = f.split(path.sep).slice(1).join(path.sep);
           // Mapping origin file path to hashed file path
-          versions[origin] = renamed;
+          versions[origin] = outPath.split(path.sep).slice(1).join(path.sep);
         }
 
-        grunt.log.write(f + ' ').ok(renamed);
+        grunt.log.write(f + ' ').ok(outPath);
       });
     });
 
